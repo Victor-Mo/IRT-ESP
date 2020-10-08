@@ -127,6 +127,17 @@ void irt_update_single_status(uint8_t cmd, uint8_t data)
 	global_status_inuse[cmd] = 1;
 }
 
+void irt_mark_in_sync(_IRT_RxTelegram *msg)
+{
+	/* mark the bus as in-sync */
+	EMS_Sys_Status.emsRxTimestamp  = msg->timestamp; // timestamp of last read
+	EMS_Sys_Status.emsBusConnected = true;
+	EMS_Sys_Status.emsIDMask = 0x00;
+	EMS_Boiler.device_id = EMS_ID_BOILER;
+	EMS_Sys_Status.emsPollFrequency = 500000; // poll in micro secs
+	EMS_Sys_Status.emsTxCapable = true;
+}
+
 uint8_t irt_handle_0x05(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 {
 	/*  0  1  2  3 */
@@ -258,6 +269,8 @@ uint8_t irt_handle_0x82(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 	}
 	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
 
+	irt_mark_in_sync(msg);
+
 	return 0;
 }
 
@@ -309,13 +322,8 @@ uint8_t irt_handle_0x90(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 	 * ss - 0xFF - in maintenance mode
 	 */
 
-	/* mark the bus as in-sync */
-	EMS_Sys_Status.emsRxTimestamp  = msg->timestamp; // timestamp of last read
-	EMS_Sys_Status.emsBusConnected = true;
-	EMS_Sys_Status.emsIDMask = 0x00;
-	EMS_Boiler.device_id = EMS_ID_BOILER;
-	EMS_Sys_Status.emsPollFrequency = 500000; // poll in micro secs
-	EMS_Sys_Status.emsTxCapable = true;
+	// should this be removed ??
+	irt_mark_in_sync(msg);
 
 	return 0;
 }
@@ -481,7 +489,7 @@ uint8_t irt_check_checksum(uint8_t *data, uint8_t length)
 	/* check if if a sub-packet has the right length
 	 * and the checksum is correct.
 	 * checksum calculation is done by xoring the three
-	 * bytes. The second byte is shifted 1 bit the the left and
+	 * bytes. The second byte is shifted 1 bit to the left and
 	 * the third byte is shifted 2 bits to the left before
 	 * xoring the bytes.
 	 * Depending on the high bit of the second byte and the 2 high bits
@@ -681,7 +689,8 @@ void irt_parseTelegram(uint8_t *telegram, uint8_t length)
 			EMS_Sys_Status.emxCrcErr++;
 			irt_dumpBuffer("irt_crcErr3: ", telegram, length);
 			i++;
-			return;
+			break;
+//			return;
 		}
 	}
 	// no data ?
@@ -699,9 +708,11 @@ void irt_parseTelegram(uint8_t *telegram, uint8_t length)
 	 */
 	i = 0;
 	ret = 0;
-	while ((i < j) && (ret == 0)) {
+	while (((i + 4) <= j) && (ret == 0)) {
 		if (irt_buffer[i] & 0x80) {
-			ret = irt_handleMsg(&irtMsg, &irt_buffer[i], 5);
+			if ((i + 5) <= j) {
+				ret = irt_handleMsg(&irtMsg, &irt_buffer[i], 5);
+			}
 			i = i + 5;
 		} else {
 			ret = irt_handleMsg(&irtMsg, &irt_buffer[i], 4);
@@ -1032,6 +1043,24 @@ void irt_setup_flowtemp_pid()
 }
 
 /**
+ * Calculate start power based on temp. diff
+ * between requested temp and current flow temp
+ */
+int16_t calculate_start_power(uint8_t req_water_temp, uint8_t cur_flowtemp)
+{
+	// if the water is hotter then the requested temp., start at the lowest power
+	if (cur_flowtemp >= req_water_temp) return IRT_MIN_USABLE_BURN_POWER;
+
+	// the water needs to get hotter
+	int16_t diff = req_water_temp - cur_flowtemp;
+
+	// clip the max diff at 40
+	if (diff > 40) diff = 40;
+
+	return (IRT_MIN_USABLE_BURN_POWER + (diff << 2));
+}
+
+/**
  * Called every minute to update the burner power for the requested
  * flow temp.
  */
@@ -1077,8 +1106,9 @@ void irt_doFlowTempTicker()
 	err = pid_Controller(IRT_Sys_Status.req_water_temp, IRT_Sys_Status.cur_flowtemp, &IRT_Sys_Status.flowPidData);
 
 	if (IRT_Sys_Status.cur_set_burner_power == 0) {
-		// Pick a starting point based on requested temp
-		new_power = 60 + (IRT_Sys_Status.req_water_temp << 1);
+		// Pick a starting point based on requested temp and cur. floww temp
+		//new_power = 60 + (IRT_Sys_Status.req_water_temp << 1);
+		new_power = calculate_start_power(IRT_Sys_Status.req_water_temp, IRT_Sys_Status.cur_flowtemp);
 		irt_setup_flowtemp_pid();
 	} else {
 		new_power = new_power + err;
