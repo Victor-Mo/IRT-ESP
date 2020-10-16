@@ -218,13 +218,13 @@ typedef struct {
 
     // UBAParameterWW
     uint8_t wWActivated;     // Warm Water activated
-    uint8_t wWSelTemp;       // Warm Water selected temperature
+    uint16_t wWSelTemp;       // Warm Water selected temperature
 //    uint8_t wWCircPump;      // Warm Water circulation pump Available
 //    uint8_t wWDesinfectTemp; // Warm Water desinfection temperature
-    uint8_t wWComfort;       // Warm water comfort or ECO mode
+//    uint8_t wWComfort;       // Warm water comfort or ECO mode
 
     // UBAMonitorFast
-    uint8_t  selFlowTemp;        // Selected flow temperature
+    uint16_t  selFlowTemp;        // Selected flow temperature
     uint16_t curFlowTemp;        // Current flow temperature
 //    uint16_t wwStorageTemp1;     // warm water storage temp 1
 //    uint16_t wwStorageTemp2;     // warm water storage temp 2
@@ -244,11 +244,11 @@ typedef struct {
 
     // UBAMonitorSlow
     int16_t  extTemp;     // Outside temperature
-    uint16_t boilTemp;    // Boiler temperature
+//    uint16_t boilTemp;    // Boiler temperature
 //    uint16_t exhaustTemp; // Exhaust temperature
-    uint8_t  pumpMod;     // Pump modulation
-    uint32_t burnStarts;  // # burner starts
-    uint32_t burnWorkMin; // Total burner operating time
+//    uint8_t  pumpMod;     // Pump modulation
+//    uint32_t burnStarts;  // # burner starts
+//    uint32_t burnWorkMin; // Total burner operating time
 //    uint32_t heatWorkMin; // Total heat operating time
 //    uint16_t switchTemp;  // Switch temperature
 
@@ -256,7 +256,7 @@ typedef struct {
     uint16_t wWCurTmp;  // Warm Water current temperature
 //    uint32_t wWStarts;  // Warm Water # starts
 //    uint32_t wWWorkM;   // Warm Water # minutes
-    uint8_t  wWOneTime; // Warm Water one time function on/off
+//    uint8_t  wWOneTime; // Warm Water one time function on/off
 //    uint8_t  wWCurFlow; // Warm Water current flow in l/min
 
     // UBATotalUptimeMessage

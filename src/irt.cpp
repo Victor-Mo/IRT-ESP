@@ -138,6 +138,38 @@ void irt_mark_in_sync(_IRT_RxTelegram *msg)
 	EMS_Sys_Status.emsTxCapable = true;
 }
 
+uint8_t irt_convert_raw_temp_to_real(uint8_t raw_in) {
+
+	if (raw_in >= 62) return raw_in;
+	if (raw_in == 61) return raw_in + 1;
+
+	if (raw_in >= 52) return raw_in + 2;
+	if (raw_in == 51) return raw_in + 3;
+
+	if (raw_in >= 42) return raw_in + 4;
+	if (raw_in == 41) return raw_in + 5;
+
+	if (raw_in >= 30) return raw_in + 6;
+	if (raw_in == 29) return raw_in + 7;
+
+	return raw_in + 8;
+}
+
+uint8_t irt_convert_real_temp_to_raw(uint8_t real_in) {
+
+	if (real_in >= 62) return real_in;
+
+	if (real_in >= 54) return real_in - 2;
+
+	if (real_in >= 46) return real_in - 4;
+
+	if (real_in >= 36) return real_in - 6;
+
+	if (real_in >= 8) return real_in - 8;
+
+	return 0;
+}
+
 uint8_t irt_handle_0x05(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 {
 	/*  0  1  2  3 */
@@ -222,7 +254,7 @@ uint8_t irt_handle_0x81(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 {
 	/* 81 C3 79 E3 35 */
 	/* 81 ?? ?? ?? tt */
-	EMS_Boiler.heating_temp = data[4];
+	EMS_Boiler.heating_temp = irt_convert_raw_temp_to_real(data[4]);
 	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
 	return 0;
 }
@@ -419,10 +451,10 @@ uint8_t irt_handle_0xA4(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 {
 	/* A4 5D 17 42 19 */
 	/* A4 ?? ?? ?? ww */
-	EMS_Boiler.curFlowTemp = (data[4] * 10);
+	EMS_Boiler.curFlowTemp = (irt_convert_raw_temp_to_real(data[4]) * 10);
 	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
 
-	IRT_Sys_Status.cur_flowtemp = data[4];
+	IRT_Sys_Status.cur_flowtemp = irt_convert_raw_temp_to_real(data[4]);
 	IRT_Sys_Status.last_flow_update = millis();
 	return 0;
 }
@@ -431,7 +463,7 @@ uint8_t irt_handle_0xA6(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 	// return temp
 	/* A6 A5 F0 1E 1C */
 	/* A6 ?? ?? cc ww */
-	EMS_Boiler.retTemp = (data[4] * 10);
+	EMS_Boiler.retTemp = (irt_convert_raw_temp_to_real(data[4]) * 10);
 	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
 	return 0;
 }
@@ -441,7 +473,7 @@ uint8_t irt_handle_0xA8(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 	// warm water temp
 	/* A8 A5 F0 10 41 */
 	/* A8 ?? ?? cc ww */
-	EMS_Boiler.wWCurTmp = (data[4] * 10);
+	EMS_Boiler.wWCurTmp = (irt_convert_raw_temp_to_real(data[4]) * 10);
 	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
 	return 0;
 }
@@ -451,8 +483,10 @@ uint8_t irt_handle_0xAC(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 	// target water temp.
 	/* AC A5 F0 10 41 */
 	/* AC ?? ?? cc ww */
-	EMS_Boiler.wWSelTemp = (data[4] * 10);
+	EMS_Boiler.wWSelTemp = (irt_convert_raw_temp_to_real(data[4]) * 10);
 	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
+
+//	myDebug_P(PSTR("val %d raw %d conv %d"), EMS_Boiler.wWSelTemp, data[4], irt_convert_raw_temp_to_real(data[4]) );
 	return 0;
 }
 
@@ -950,9 +984,9 @@ void irt_send_next_poll_to_boiler()
 		if ((IRT_Sys_Status.cur_set_burner_power > 0) &&
 				(IRT_Sys_Status.cur_set_burner_power <= IRT_MIN_USABLE_BURN_POWER) &&
 				(IRT_Sys_Status.req_water_temp >= IRT_MIN_FLOWTEMP)) {
-			irt_add_sub_msg(&IRT_Tx, 0x01, IRT_Sys_Status.req_water_temp, 0xF6, 2); // set max cv water temp
+			irt_add_sub_msg(&IRT_Tx, 0x01, irt_convert_real_temp_to_raw(IRT_Sys_Status.req_water_temp), 0xF6, 2); // set max cv water temp
 		} else {
-			irt_add_sub_msg(&IRT_Tx, 0x01, EMSESP_Settings.max_flowtemp, 0xF6, 2); // set max cv water temp
+			irt_add_sub_msg(&IRT_Tx, 0x01, irt_convert_real_temp_to_raw(EMSESP_Settings.max_flowtemp), 0xF6, 2); // set max cv water temp
 		}
 		IRT_TxQueue.push(IRT_Tx);
 		break;
