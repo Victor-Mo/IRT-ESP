@@ -95,36 +95,150 @@ void irt_dumpBuffer(const char * prefix, uint8_t * telegram, uint8_t length)
 	myDebug(output_str);
 }
 
-uint8_t global_status[0x100];
-uint8_t global_status_inuse[0x100];
-uint8_t global_has_changed = 0;
-uint8_t global_status_first_run = 1;
+#define MAX_GL_STATUS 0x2FF
 
+//uint8_t global_status[MAX_GL_STATUS + 1];
+//uint8_t global_status_inuse[MAX_GL_STATUS + 1];
+uint8_t global_has_changed = 0;
+//uint8_t global_status_first_run = 1;
+
+#define MAX_GL_STATUS_FULL 0x0100
+uint32_t global_status_full_msg[MAX_GL_STATUS_FULL];
+uint8_t global_status_full_data[MAX_GL_STATUS_FULL];
+uint16_t global_status_full_in_use = 0;
+
+void irt_add_status_to_list(uint8_t m1, uint8_t m2, uint8_t m3, uint8_t data)
+{
+	uint16_t i, j;
+
+	uint32_t msg;
+
+	msg = m1;
+	msg = msg << 8;
+	msg |= m2;
+	msg = msg << 8;
+	msg |= m3;
+
+	for (i=0; i<global_status_full_in_use; i++) {
+		if (global_status_full_msg[i] == msg) {
+			if (data != global_status_full_data[i]) {
+				global_status_full_data[i] = data;
+				global_has_changed = 1;
+			}
+			return;
+		}
+	}
+	// if we reach this point we have not found the entry, add it
+	if (global_status_full_in_use < MAX_GL_STATUS_FULL) {
+		i = global_status_full_in_use;
+		global_status_full_msg[i] = msg;
+		global_status_full_data[i] = data;
+		global_status_full_in_use++;
+		global_has_changed = 1;
+
+		// sort list
+		uint8_t temp_data;
+		uint16_t n, min_loc;
+		uint32_t min_val, temp_msg;
+
+		n = global_status_full_in_use;
+		for(i=0; i<(n-1); i++)
+		{
+			min_val = global_status_full_msg[i];
+			min_loc=i;
+			for( j=i+1; j<n; j++)
+			{
+				if (min_val > global_status_full_msg[j])
+            {
+					min_val = global_status_full_msg[j];
+					min_loc = j;
+				}
+			}
+			// swap item
+			temp_msg = global_status_full_msg[i];
+			temp_data = global_status_full_data[i];
+
+			global_status_full_msg[i] = global_status_full_msg[min_loc];
+			global_status_full_data[i] = global_status_full_data[min_loc];
+
+			global_status_full_msg[min_loc] = temp_msg;
+			global_status_full_data[min_loc] = temp_data;
+		}
+	}
+
+//	for (i=0; i<global_status_full_in_use; i++) {
+//		printf("%06X:%02X ", global_status_full_msg[i], global_status_full_data[i]);
+//	}
+//	printf("\n");
+
+}
+void irt_dump_status_line()
+{
+	uint32_t    timestamp       = millis();
+	static char output_str[300] = {0};
+	static char buffer[16]      = {0};
+
+	if (EMS_Sys_Status.emsLogging == EMS_SYS_LOGGING_NONE)
+		return;
+
+	strlcpy(output_str, "(", sizeof(output_str));
+	strlcat(output_str, COLOR_CYAN, sizeof(output_str));
+	strlcat(output_str, _smallitoa((uint8_t)((timestamp / 3600000) % 24), buffer), sizeof(output_str));
+	strlcat(output_str, ":", sizeof(output_str));
+	strlcat(output_str, _smallitoa((uint8_t)((timestamp / 60000) % 60), buffer), sizeof(output_str));
+	strlcat(output_str, ":", sizeof(output_str));
+	strlcat(output_str, _smallitoa((uint8_t)((timestamp / 1000) % 60), buffer), sizeof(output_str));
+	strlcat(output_str, ".", sizeof(output_str));
+	strlcat(output_str, _smallitoa3(timestamp % 1000, buffer), sizeof(output_str));
+	strlcat(output_str, COLOR_RESET, sizeof(output_str));
+	strlcat(output_str, ") ", sizeof(output_str));
+
+	strlcat(output_str, ": ", sizeof(output_str));
+
+	uint8_t msg = 0;
+	uint8_t last_msg = 0;
+	// print whole buffer, don't interpret any data
+	for (int i = 0; i < global_status_full_in_use; i++) {
+		msg = (global_status_full_msg[i] >> 16);
+		if ((msg >= 0x80) && (last_msg < 0x80)) {
+			strlcat(output_str, " | ", sizeof(output_str));
+		}
+		if ((msg >= 0xF0) && (last_msg < 0xF0)) {
+			strlcat(output_str, " | ", sizeof(output_str));
+		}
+		if (/*(msg == 0x78) ||*/ (msg == 0xF0)) {
+			sprintf(buffer, "%06X:%02X ", global_status_full_msg[i], global_status_full_data[i]);
+		} else {
+			sprintf(buffer, "%02X:%02X ", msg, global_status_full_data[i]);
+		}
+		strlcat(output_str, buffer, sizeof(output_str));
+		last_msg = msg;
+	}
+
+	strlcat(output_str, "  ", sizeof(output_str));
+	strlcat(output_str, EMS_Boiler.serviceCodeChar, sizeof(output_str));
+
+	strlcat(output_str, COLOR_RESET, sizeof(output_str));
+
+	myDebug(output_str);
+}
 void irt_update_status(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 {
 
-	if (global_status_first_run) {
-		memset(global_status, 0, sizeof(global_status));
-		memset(global_status_inuse, 0, sizeof(global_status_inuse));
-		global_status_first_run = 0;
+/*	if (data[0] == 0x78) {
+		irt_add_status_to_list(data[0], 0, data[2], data[1]);
+		return;
+	}*/
+	if (data[0] == 0xF0) {
+		irt_add_status_to_list(data[0], data[1], data[2], data[4]);
+		return;
 	}
-	if (data[0] == 0xF0) return;
 
 	if (data[0] & 0x80) {
-		if (global_status[data[0]] != data[4]) global_has_changed = 1;
-		global_status[data[0]] = data[4];
+		irt_add_status_to_list(data[0], 0, 0, data[4]);
 	} else {
-		if (global_status[data[0]] != data[1]) global_has_changed = 1;
-		global_status[data[0]] = data[1];
+		irt_add_status_to_list(data[0], 0, 0, data[1]);
 	}
-	global_status_inuse[data[0]] = 1;
-
-}
-void irt_update_single_status(uint8_t cmd, uint8_t data)
-{
-	if (global_status[cmd] != data) global_has_changed = 1;
-	global_status[cmd] = data;
-	global_status_inuse[cmd] = 1;
 }
 
 void irt_mark_in_sync(_IRT_RxTelegram *msg)
@@ -473,8 +587,11 @@ uint8_t irt_handle_0xA8(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 	// warm water temp
 	/* A8 A5 F0 10 41 */
 	/* A8 ?? ?? cc ww */
-	EMS_Boiler.wWCurTmp = (irt_convert_raw_temp_to_real(data[4]) * 10);
-	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
+	/* ignore invalid values */
+	if (data[4] < 100) {
+		EMS_Boiler.wWCurTmp = (irt_convert_raw_temp_to_real(data[4]) * 10);
+		ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
+	}
 	return 0;
 }
 
@@ -483,9 +600,11 @@ uint8_t irt_handle_0xAC(_IRT_RxTelegram *msg, uint8_t *data, uint8_t length)
 	// target water temp.
 	/* AC A5 F0 10 41 */
 	/* AC ?? ?? cc ww */
-	EMS_Boiler.wWSelTemp = (irt_convert_raw_temp_to_real(data[4]) * 10);
-	ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
-
+	/* ignore invalid values */
+	if (data[4] < 100) {
+		EMS_Boiler.wWSelTemp = (irt_convert_raw_temp_to_real(data[4]) * 10);
+		ems_Device_add_flags(EMS_DEVICE_UPDATE_FLAG_BOILER);
+	}
 //	myDebug_P(PSTR("val %d raw %d conv %d"), EMS_Boiler.wWSelTemp, data[4], irt_convert_raw_temp_to_real(data[4]) );
 	return 0;
 }
@@ -737,8 +856,8 @@ void irt_parseTelegram(uint8_t *telegram, uint8_t length)
 	 * Any message with the high bit set is a 'cmd id' followed
 	 * by 3 bytes and a response from the boiler
 	 * if the bit is not set it is just followed by 3 bytes
-	 * 8x tt tt tt bb
-	 * 0x tt tt tt
+	 * 8x tt tt cc bb
+	 * 0x tt tt cc
 	 */
 	i = 0;
 	ret = 0;
@@ -755,25 +874,8 @@ void irt_parseTelegram(uint8_t *telegram, uint8_t length)
 	}
 
 	if ((global_has_changed) && (EMS_Sys_Status.emsLogging != EMS_SYS_LOGGING_NONE)) {
-		char temp[10];
-		char out_text[200];
-		int i;
-
-		out_text[0] = 0;
-		for (i=0; i<256; i++) {
-			if (i == 0x80) {
-				strlcat(out_text, "| ", sizeof(out_text));
-			}
-			if (global_status_inuse[i]) {
-				snprintf(temp, sizeof(temp), "%02X:%02X ", i, global_status[i]);
-				strlcat(out_text, temp, sizeof(out_text));
-			}
-		}
-		strlcat(out_text, "  ", sizeof(out_text));
-		strlcat(out_text, EMS_Boiler.serviceCodeChar, sizeof(out_text));
-		myDebug(out_text);
+		irt_dump_status_line();
 		global_has_changed = 0;
-//		if (global_status[0] > 0) showInfo();
 	}
 
 }
@@ -1426,7 +1528,7 @@ void ems_setLogging(_EMS_SYS_LOGGING loglevel, bool silent) {
         } else if (loglevel == EMS_SYS_LOGGING_THERMOSTAT) {
             myDebug_P(PSTR("System Logging set to Thermostat only"));
         } else if (loglevel == EMS_SYS_LOGGING_SOLARMODULE) {
-            myDebug_P(PSTR("System Logging set to Solar Module only"));
+            myDebug_P(PSTR("System Logging set to status only"));
         } else if (loglevel == EMS_SYS_LOGGING_RAW) {
             myDebug_P(PSTR("System Logging set to Raw mode"));
         } else if (loglevel == EMS_SYS_LOGGING_JABBER) {

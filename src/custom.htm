@@ -126,7 +126,7 @@
         <label class="col-xs-3">Tx mode<i style="margin-left: 10px;"
                 class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true" data-toggle="popover"
                 data-trigger="hover" data-placement="right"
-                data-content="Tx mode settings for sending data to the EMS bus"></i></label>
+                data-content="Tx mode settings for sending data to the iRT bus"></i></label>
         <span class="col-xs-9 col-md-5">
             <select class="form-control input-sm" id="tx_mode">
                 <option selected="selected" value="1">1 (EMS generic)</option>
@@ -155,13 +155,13 @@
     <br>
     <div class="row text-left">
         <div class="col-md-8 col-md-offset-2">
-            <h2>EMS Dashboard</h2>
-            <h6>Real-time values from the EMS-ESP device are shown here</h6>
+            <h2>iRT Dashboard</h2>
+            <h6>Real-time values from the iRT-ESP device are shown here</h6>
         </div>
         <div class="col-md-8 col-md-offset-2">
             <div class="panel panel-default table-responsive">
                 <table class="table table-hover table-striped table-condensed">
-                    <caption>EMS Bus Status</caption>
+                    <caption>iRT Bus Status</caption>
                     <tr>
                         <td colspan="2">
                             <b>
@@ -170,7 +170,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <th id="devicesshow">Discovered Devices:</th>
+                        <th id="devicesshow"></th>
                         <td>
                             <ul class="list-group">
                                 <div id="devices"></div>
@@ -189,7 +189,7 @@
                         <td id="b2"></td>
                     </tr>
                     <tr>
-                        <th>Selected Flow Temperature:</th>
+                        <th>Burner power:</th>
                         <td id="b3"></td>
                         <th>Current Flow Temperature:</th>
                         <td id="b4"></td>
@@ -199,6 +199,12 @@
                         <td id="b5"></td>
                         <th>Return Temperature:</th>
                         <td id="b6"></td>
+                    </tr>
+                    <tr>
+                        <th>Selected Flow Temperature:</th>
+                        <td id="b7"></td>
+                        <th>Outside temperature:</th>
+                        <td id="b8"></td>
                     </tr>
                 </table>
             </div>

@@ -108,9 +108,9 @@ function listCustomStats() {
         } else if (type === "Heat Pump") {
             color = "list-group-item-success";
         }
-        l.innerHTML = obj[i].model + " (DeviceID: 0x" + obj[i].deviceid + ", ProductID: " + obj[i].productid + ", Version: " + obj[i].version + ")";
-        l.className = "list-group-item " + color;
-        list.appendChild(l);
+        //l.innerHTML = obj[i].model + " (DeviceID: 0x" + obj[i].deviceid + ", ProductID: " + obj[i].productid + ", Version: " + obj[i].version + ")";
+        //l.className = "list-group-item " + color;
+        //list.appendChild(l);
     }
 
     if (ajaxobj.boiler.ok) {
@@ -119,10 +119,12 @@ function listCustomStats() {
         document.getElementById("bm").innerHTML = ajaxobj.boiler.bm;
         document.getElementById("b1").innerHTML = ajaxobj.boiler.b1;
         document.getElementById("b2").innerHTML = ajaxobj.boiler.b2;
-        document.getElementById("b3").innerHTML = ajaxobj.boiler.b3 + " &#8451;";
+        document.getElementById("b3").innerHTML = ajaxobj.boiler.b3 + " &#37;";
         document.getElementById("b4").innerHTML = ajaxobj.boiler.b4 + " &#8451;";
         document.getElementById("b5").innerHTML = ajaxobj.boiler.b5 + " &#8451;";
         document.getElementById("b6").innerHTML = ajaxobj.boiler.b6 + " &#8451;";
+        document.getElementById("b7").innerHTML = ajaxobj.boiler.b7 + " &#8451;";
+        document.getElementById("b8").innerHTML = ajaxobj.boiler.b8 + " &#8451;";
     } else {
         document.getElementById("boiler_show").style.display = "none";
     }

@@ -34,8 +34,8 @@ DS18 ds18;
 // default APP params
 #define APP_NAME "IRT-ESP"
 #define APP_HOSTNAME "irt-esp"
-#define APP_URL "https://github.com/Victor-Mo/IRT-EMS-ESP"
-#define APP_URL_API "https://api.github.com/repos/Victor-Mo/IRT-EMS-ESP"
+#define APP_URL "https://github.com/Victor-Mo/IRT-ESP"
+#define APP_URL_API "https://api.github.com/repos/Victor-Mo/IRT-ESP"
 
 #define DEFAULT_PUBLISHTIME 0         // 0=automatic
 #define DEFAULT_SENSOR_PUBLISHTIME 10 // 10 seconds to post MQTT topics on Dallas sensors when in automatic mode
@@ -218,7 +218,7 @@ void showInfo() {
     } else if (sysLog == EMS_SYS_LOGGING_THERMOSTAT) {
         myDebug_P(PSTR("  System logging set to Thermostat only"));
     } else if (sysLog == EMS_SYS_LOGGING_SOLARMODULE) {
-        myDebug_P(PSTR("  System logging set to Solar Module only"));
+        myDebug_P(PSTR("  System logging set to status only"));
     } else if (sysLog == EMS_SYS_LOGGING_JABBER) {
         myDebug_P(PSTR("  System logging set to Jabber"));
     } else if (sysLog == EMS_SYS_LOGGING_WATCH) {
@@ -1981,18 +1981,19 @@ void WebCallback(JsonObject root) {
 
     if (myESP.getUseSerial()) {
         emsbus["ok"]  = false;
-        emsbus["msg"] = "EMS Bus is disabled when in Serial mode. Check Settings->General Settings->Serial Port";
+        emsbus["msg"] = "iRT Bus is disabled when in Serial mode. Check Settings->General Settings->Serial Port";
     } else {
         if (ems_getBusConnected()) {
             if (ems_getTxDisabled()) {
                 emsbus["ok"]  = false;
-                emsbus["msg"] = "EMS Bus Connected with Rx active but Tx has been disabled (in listen only mode).";
-            } else if (/*ems_getTxCapable()*/1) {
-                emsbus["ok"]  = true;
-                emsbus["msg"] = "EMS Bus Connected with both Rx and Tx active.";
+                emsbus["msg"] = "iRT Bus Connected with Rx active but Tx has been disabled (in listen only mode).";
             } else {
-                emsbus["ok"]  = false;
-                emsbus["msg"] = "EMS Bus Connected but Tx is not working.";
+                emsbus["ok"]  = true;
+                if (EMSESP_Settings.tx_mode > 4) {
+							emsbus["msg"] = "iRT Bus Connected with both Rx and Tx active.";
+                } else {
+							emsbus["msg"] = "iRT Bus Connected with Rx working.";
+                }
             }
         } else {
             emsbus["ok"]  = false;
@@ -2093,11 +2094,18 @@ void WebCallback(JsonObject root) {
 //        char buffer[200];
         boiler["bm"] = /*ems_getDeviceDescription(EMS_DEVICE_TYPE_BOILER, buffer, true)*/ "iRT";
 
-        boiler["b1"] = (EMS_Boiler.tapwaterActive ? "running" : "off");
-        boiler["b2"] = (EMS_Boiler.heatingActive ? "active" : "off");
+			if (EMS_Boiler.tapwaterActive) {
+				boiler["b1"] = "running";
+			} else if (EMS_Boiler.wWActivated) {
+				boiler["b1"] = "idle";
+			} else {
+				boiler["b1"] = "off";
+			}
+        //boiler["b1"] = (EMS_Boiler.tapwaterActive ? "running" : "off");
+        boiler["b2"] = (EMS_Boiler.heatingActive ? "running" : "idle");
 
-        if (EMS_Boiler.selFlowTemp != EMS_VALUE_INT_NOTSET)
-            boiler["b3"] = EMS_Boiler.selFlowTemp;
+        if (EMS_Boiler.selBurnPow != EMS_VALUE_INT_NOTSET)
+            boiler["b3"] = EMS_Boiler.selBurnPow;
 
         if (EMS_Boiler.curFlowTemp != EMS_VALUE_INT_NOTSET)
             boiler["b4"] = EMS_Boiler.curFlowTemp / 10;
@@ -2107,6 +2115,12 @@ void WebCallback(JsonObject root) {
 
         if (EMS_Boiler.retTemp < EMS_VALUE_USHORT_NOTSET)
             boiler["b6"] = (float)EMS_Boiler.retTemp / 10;
+
+        if (EMS_Boiler.selFlowTemp != EMS_VALUE_INT_NOTSET)
+            boiler["b7"] = EMS_Boiler.selFlowTemp;
+
+        if (EMS_Boiler.retTemp < EMS_VALUE_USHORT_NOTSET)
+            boiler["b8"] = (float)EMS_Boiler.extTemp / 10;
 
     } else {
         boiler["ok"] = false;
