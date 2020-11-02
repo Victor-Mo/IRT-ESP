@@ -311,7 +311,7 @@ void showInfo() {
     _renderBoolValue("Warm Water 3-way valve", EMS_Boiler.wWHeat);
 
     // UBAMonitorFast
-    _renderUShortValue("Selected flow temperature", "C", EMS_Boiler.selFlowTemp);
+    _renderUShortValue("Selected flow temperature", "C", EMS_Boiler.selFlowTemp, 0);
     _renderUShortValue("Current flow temperature", "C", EMS_Boiler.curFlowTemp);
     _renderUShortValue("Return temperature", "C", EMS_Boiler.retTemp);
     _renderBoolValue("Gas", EMS_Boiler.burnGas);

@@ -201,10 +201,10 @@ void irt_dump_status_line()
 	for (int i = 0; i < global_status_full_in_use; i++) {
 		msg = (global_status_full_msg[i] >> 16);
 		if ((msg >= 0x80) && (last_msg < 0x80)) {
-			strlcat(output_str, " | ", sizeof(output_str));
+			strlcat(output_str, "| ", sizeof(output_str));
 		}
 		if ((msg >= 0xF0) && (last_msg < 0xF0)) {
-			strlcat(output_str, " | ", sizeof(output_str));
+			strlcat(output_str, "| ", sizeof(output_str));
 		}
 		if (/*(msg == 0x78) ||*/ (msg == 0xF0)) {
 			sprintf(buffer, "%06X:%02X ", global_status_full_msg[i], global_status_full_data[i]);
