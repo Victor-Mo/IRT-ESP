@@ -614,7 +614,7 @@ void publishEMSValues_boiler() {
     }
 */
     if (EMS_Boiler.wWSelTemp != EMS_VALUE_INT_NOTSET) {
-        rootBoiler["wWSelTemp"] = EMS_Boiler.wWSelTemp;
+        rootBoiler["wWSelTemp"] = EMS_Boiler.wWSelTemp / 10;
     }
 //    if (EMS_Boiler.wWDesinfectTemp != EMS_VALUE_INT_NOTSET) {
 //        rootBoiler["wWDesinfectionTemp"] = EMS_Boiler.wWDesinfectTemp;
