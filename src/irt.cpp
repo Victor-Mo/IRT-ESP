@@ -1255,7 +1255,7 @@ void irt_doFlowTempTicker()
 	if (new_power < IRT_MIN_USABLE_BURN_POWER) new_power = IRT_MIN_USABLE_BURN_POWER; // any lower and the boiler stops running
 	if (new_power > 0xF0) new_power = 0xF0; // max power
 
-	myDebug_P(PSTR("Req %d C Cur %d Err %d old pwr: %d new pwr: %d (0x%02x)"), IRT_Sys_Status.req_water_temp, IRT_Sys_Status.cur_flowtemp, err, IRT_Sys_Status.cur_set_burner_power, new_power, new_power);
+	CHECK_DEB myDebug_P(PSTR("Req %d C Cur %d Err %d old pwr: %d new pwr: %d (0x%02x)"), IRT_Sys_Status.req_water_temp, IRT_Sys_Status.cur_flowtemp, err, IRT_Sys_Status.cur_set_burner_power, new_power, new_power);
 
 	IRT_Sys_Status.cur_set_burner_power = (uint8_t)new_power;
 
