@@ -38,6 +38,8 @@ char * _hextoa(uint8_t value, char * buffer);
 char * _smallitoa(uint8_t value, char * buffer);
 char * _smallitoa3(uint16_t value, char * buffer);
 
+#define CHECK_DEB if (EMS_Sys_Status.emsLogging != EMS_SYS_LOGGING_NONE)
+
 /**
  * dump a UART Tx or Rx buffer to console...
  */
@@ -1271,14 +1273,14 @@ void irt_setFlowTemp(uint8_t temperature) {
 	EMS_Boiler.selFlowTemp = temperature;
 
 	if (EMSESP_Settings.tx_mode == 5) {
-		myDebug_P(PSTR("Setting boiler flow temperature to %d C"), temperature);
+		CHECK_DEB myDebug_P(PSTR("Setting boiler flow temperature to %d C"), temperature);
 		IRT_Sys_Status.req_water_temp = temperature;
 		if (IRT_Sys_Status.req_water_temp < IRT_MIN_FLOWTEMP) {
 			// reset burner directly
 			IRT_Sys_Status.cur_set_burner_power = 0;
 		}
 	} else {
-		myDebug_P(PSTR("Cannot set boiler flow temperature to %d C, not in active mode"), temperature);
+		CHECK_DEB myDebug_P(PSTR("Cannot set boiler flow temperature to %d C, not in active mode"), temperature);
 		IRT_Sys_Status.req_water_temp = 0;
 	}
 }
@@ -1287,7 +1289,7 @@ void irt_setFlowTemp(uint8_t temperature) {
  * true = on, false = off
  */
 void irt_setWarmWaterActivated(bool activated) {
-    myDebug_P(PSTR("Setting boiler warm water %s"), activated ? "on" : "off");
+    CHECK_DEB  myDebug_P(PSTR("Setting boiler warm water %s"), activated ? "on" : "off");
 
 	if (activated) {
 		IRT_Sys_Status.warm_water_mode = 1;

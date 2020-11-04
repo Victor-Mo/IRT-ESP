@@ -402,9 +402,9 @@ void showInfo() {
     }
 #endif
     // Thermostat stats
-    if (ems_getThermostatEnabled()) {
-        myDebug_P(PSTR("")); // newline
-        myDebug_P(PSTR("%sThermostat stats:%s"), COLOR_BOLD_ON, COLOR_BOLD_OFF);
+//    if (ems_getThermostatEnabled()) {
+//        myDebug_P(PSTR("")); // newline
+//        myDebug_P(PSTR("%sThermostat stats:%s"), COLOR_BOLD_ON, COLOR_BOLD_OFF);
 //        myDebug_P(PSTR("  Thermostat: %s"), ems_getThermostatDescription(buffer_type, false));
 
 #ifdef nuniet        // Render Thermostat Date & Time
@@ -478,7 +478,7 @@ void showInfo() {
             }
         }
 #endif
-    }
+//    }
 #ifdef nuniet
     // Mixing modules sensors
     if (ems_getMixingDeviceEnabled()) {
