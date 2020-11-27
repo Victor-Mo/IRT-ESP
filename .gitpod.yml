@@ -1,0 +1,7 @@
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - init: pip3 install platformio && cd ./tools/webfilesbuilder && npm ci && node_modules/gulp/bin/gulp.js && cd ../..
+    command: pio run
+
